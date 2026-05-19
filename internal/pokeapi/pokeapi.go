@@ -17,14 +17,42 @@ type LocationAreaResponse struct {
 	} `json:"results"`
 }
 
-// GetLocationAreas fetches the next 20 location areas
 func (c *PokeAPIClient) GetLocationAreas() ([]string, error) {
-	// use Next URL if available, otherwise start from beginning
 	url := locationAreaURL
 	if c.Next != nil {
 		url = *c.Next
 	}
 
+	// check cache — avoid network call if we have it
+	if cached, ok := c.cache.Get(url); ok {
+		fmt.Println("(cache hit)")
+		return c.parseLocationNames(cached)
+	}
+
+	// cache miss — make the HTTP request
+	fmt.Println("(cache miss — fetching from API)")
+	body, err := c.fetch(url)
+	if err != nil {
+		return nil, err
+	}
+
+	// store in cache for next time
+	c.cache.Add(url, body)
+
+	return c.parseLocationNames(body)
+}
+
+// GetPreviousLocationAreas goes back one page
+func (c *PokeAPIClient) GetPreviousLocationAreas() ([]string, error) {
+	if c.Previous == nil {
+		return nil, nil
+	}
+	c.Next = c.Previous
+	return c.GetLocationAreas()
+}
+
+// fetch makes a GET request and returns the raw body bytes
+func (c *PokeAPIClient) fetch(url string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -45,12 +73,16 @@ func (c *PokeAPIClient) GetLocationAreas() ([]string, error) {
 		return nil, fmt.Errorf("bad status: %d body: %s", res.StatusCode, body)
 	}
 
+	return body, nil
+}
+
+func (c *PokeAPIClient) parseLocationNames(body []byte) ([]string, error) {
 	var payload LocationAreaResponse
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return nil, err
 	}
 
-	// update pagination state on the client
+	// update pagination for next/previous calls
 	c.Next = payload.Next
 	c.Previous = payload.Previous
 
@@ -59,14 +91,4 @@ func (c *PokeAPIClient) GetLocationAreas() ([]string, error) {
 		names[i] = area.Name
 	}
 	return names, nil
-}
-
-// GetPreviousLocationAreas goes back one page
-func (c *PokeAPIClient) GetPreviousLocationAreas() ([]string, error) {
-	if c.Previous == nil {
-		return nil, nil // caller checks for nil — means first page
-	}
-	// point Next at Previous so GetLocationAreas uses it
-	c.Next = c.Previous
-	return c.GetLocationAreas()
 }
