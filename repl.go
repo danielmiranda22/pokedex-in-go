@@ -13,11 +13,11 @@ type cliCommand struct {
 	name        string
 	description string
 	callback    func() error
-	api         *pokeapi.Config
+	// no api field — commands get client via closure
 }
 
-func startRepl(apiConfig *pokeapi.Config) {
-	cmds := getCommands(apiConfig)
+func startRepl(client *pokeapi.PokeAPIClient) {
+	cmds := getCommands(client)
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
@@ -32,14 +32,12 @@ func startRepl(apiConfig *pokeapi.Config) {
 			continue
 		}
 
-		// look up the command in the registry
 		cmd, ok := cmds[words[0]]
 		if !ok {
 			fmt.Println("Unknown command")
 			continue
 		}
 
-		// call the command — print error if it returns one
 		if err := cmd.callback(); err != nil {
 			fmt.Println("Error:", err)
 		}
@@ -49,7 +47,7 @@ func startRepl(apiConfig *pokeapi.Config) {
 func commandExit() error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
-	return nil // never reached — os.Exit stops the program
+	return nil
 }
 
 func commandHelp(cmds map[string]cliCommand) func() error {
@@ -64,10 +62,9 @@ func commandHelp(cmds map[string]cliCommand) func() error {
 	}
 }
 
-// commandMap fetches next 20 location areas
-func commandMap(config *pokeapi.Config) func() error {
+func commandMap(client *pokeapi.PokeAPIClient) func() error {
 	return func() error {
-		areas, err := pokeapi.GetLocationAreas(config)
+		areas, err := client.GetLocationAreas()
 		if err != nil {
 			return err
 		}
@@ -78,14 +75,13 @@ func commandMap(config *pokeapi.Config) func() error {
 	}
 }
 
-// commandMapBack fetches previous 20 location areas
-func commandMapBack(config *pokeapi.Config) func() error {
+func commandMapBack(client *pokeapi.PokeAPIClient) func() error {
 	return func() error {
-		if config.Previous == nil {
+		if client.Previous == nil {
 			fmt.Println("you're on the first page")
 			return nil
 		}
-		areas, err := pokeapi.GetPreviousLocationAreas(config)
+		areas, err := client.GetPreviousLocationAreas()
 		if err != nil {
 			return err
 		}
@@ -96,7 +92,7 @@ func commandMapBack(config *pokeapi.Config) func() error {
 	}
 }
 
-func getCommands(apiConfig *pokeapi.Config) map[string]cliCommand {
+func getCommands(client *pokeapi.PokeAPIClient) map[string]cliCommand {
 	cmds := map[string]cliCommand{
 		"exit": {
 			name:        "exit",
@@ -111,13 +107,13 @@ func getCommands(apiConfig *pokeapi.Config) map[string]cliCommand {
 	}
 	cmds["map"] = cliCommand{
 		name:        "map",
-		description: "Displays a list of location areas",
-		callback:    commandMap(apiConfig),
+		description: "Displays next 20 location areas",
+		callback:    commandMap(client),
 	}
 	cmds["mapb"] = cliCommand{
-		name:        "map-back",
-		description: "Go back to the previous list of location areas",
-		callback:    commandMapBack(apiConfig),
+		name:        "mapb",
+		description: "Displays previous 20 location areas",
+		callback:    commandMapBack(client),
 	}
 	return cmds
 }

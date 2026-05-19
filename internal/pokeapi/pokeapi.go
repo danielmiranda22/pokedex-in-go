@@ -7,58 +7,53 @@ import (
 	"net/http"
 )
 
-const baseURL = "https://pokeapi.co/api/v2/location-area/"
-
-type Config struct {
-	Next     *string
-	Previous *string
-}
-
 type LocationAreaResponse struct {
 	Count    int     `json:"count"`
-	Next     *string `json:"next"`     // nullable — *string not string
-	Previous *string `json:"previous"` // nullable — first page is null
+	Next     *string `json:"next"`
+	Previous *string `json:"previous"`
 	Results  []struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
 	} `json:"results"`
 }
 
-func GetLocationAreas(config *Config) ([]string, error) {
-	url := baseURL
-	if config.Next != nil {
-		url = *config.Next
+// GetLocationAreas fetches the next 20 location areas
+func (c *PokeAPIClient) GetLocationAreas() ([]string, error) {
+	// use Next URL if available, otherwise start from beginning
+	url := locationAreaURL
+	if c.Next != nil {
+		url = *c.Next
 	}
 
-	// make the GET request
-	res, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close() // always close body when done
 
-	// read the response body
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	// check status code AFTER reading body
 	if res.StatusCode > 299 {
-		return nil, fmt.Errorf("bad status: %d", res.StatusCode)
+		return nil, fmt.Errorf("bad status: %d body: %s", res.StatusCode, body)
 	}
 
-	// decode JSON into struct
 	var payload LocationAreaResponse
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return nil, err
 	}
 
-	// update pagination state for next/previous calls
-	config.Next = payload.Next
-	config.Previous = payload.Previous
+	// update pagination state on the client
+	c.Next = payload.Next
+	c.Previous = payload.Previous
 
-	// extract just the names
 	names := make([]string, len(payload.Results))
 	for i, area := range payload.Results {
 		names[i] = area.Name
@@ -66,11 +61,12 @@ func GetLocationAreas(config *Config) ([]string, error) {
 	return names, nil
 }
 
-func GetPreviousLocationAreas(config *Config) ([]string, error) {
-	if config.Previous == nil {
-		return nil, nil // signal: no previous page
+// GetPreviousLocationAreas goes back one page
+func (c *PokeAPIClient) GetPreviousLocationAreas() ([]string, error) {
+	if c.Previous == nil {
+		return nil, nil // caller checks for nil — means first page
 	}
-	// swap next to previous URL so GetLocationAreas uses it
-	config.Next = config.Previous
-	return GetLocationAreas(config)
+	// point Next at Previous so GetLocationAreas uses it
+	c.Next = c.Previous
+	return c.GetLocationAreas()
 }
