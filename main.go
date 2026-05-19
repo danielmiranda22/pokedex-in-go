@@ -1,5 +1,8 @@
 package main
 
+import "github.com/danielmiranda22/pokedexcli/internal/pokeapi"
+
 func main() {
-	startRepl()
+	config := &pokeapi.Config{}
+	startRepl(config)
 }
