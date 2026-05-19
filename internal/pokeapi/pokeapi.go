@@ -17,6 +17,48 @@ type LocationAreaResponse struct {
 	} `json:"results"`
 }
 
+type ExploreAreaResponse struct {
+	PokemonEncounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"pokemon"`
+	} `json:"pokemon_encounters"`
+}
+
+func (c *PokeAPIClient) ExploreArea(areaName string) ([]string, error) {
+	url := locationAreaURL + areaName
+
+	// check cache first
+	if cached, ok := c.cache.Get(url); ok {
+		return parsePokemonNames(cached)
+	}
+
+	// cache miss — fetch from API
+	body, err := c.fetch(url)
+	if err != nil {
+		return nil, err
+	}
+
+	// store in cache
+	c.cache.Add(url, body)
+
+	return parsePokemonNames(body)
+}
+
+func parsePokemonNames(body []byte) ([]string, error) {
+	var payload ExploreAreaResponse
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, err
+	}
+
+	names := make([]string, len(payload.PokemonEncounters))
+	for i, encounter := range payload.PokemonEncounters {
+		names[i] = encounter.Pokemon.Name
+	}
+	return names, nil
+}
+
 func (c *PokeAPIClient) GetLocationAreas() ([]string, error) {
 	url := locationAreaURL
 	if c.Next != nil {

@@ -12,7 +12,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(args []string) error
 }
 
 func startRepl(client *pokeapi.PokeAPIClient) {
@@ -37,36 +37,10 @@ func startRepl(client *pokeapi.PokeAPIClient) {
 			continue
 		}
 
-		if err := cmd.callback(); err != nil {
+		if err := cmd.callback(words); err != nil {
 			fmt.Println("Error:", err)
 		}
 	}
-}
-
-func getCommands(client *pokeapi.PokeAPIClient) map[string]cliCommand {
-	cmds := map[string]cliCommand{
-		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    commandExit,
-		},
-	}
-	cmds["help"] = cliCommand{
-		name:        "help",
-		description: "Displays a help message",
-		callback:    commandHelp(cmds),
-	}
-	cmds["map"] = cliCommand{
-		name:        "map",
-		description: "Displays next 20 location areas",
-		callback:    commandMap(client),
-	}
-	cmds["mapb"] = cliCommand{
-		name:        "mapb",
-		description: "Displays previous 20 location areas",
-		callback:    commandMapBack(client),
-	}
-	return cmds
 }
 
 func cleanInput(input string) []string {
