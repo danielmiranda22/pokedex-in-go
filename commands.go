@@ -80,7 +80,7 @@ func commandExplore(client *pokeapi.PokeAPIClient) func([]string) error {
 	}
 }
 
-func commandCatch(client *pokeapi.PokeAPIClient) func([]string) error {
+func commandCatch(client *pokeapi.PokeAPIClient, pokedex *Pokedex) func([]string) error {
 	return func(args []string) error {
 		if len(args) < 2 {
 			return errors.New("you must provide a pokemon name")
@@ -97,7 +97,7 @@ func commandCatch(client *pokeapi.PokeAPIClient) func([]string) error {
 		rnd := rand.Intn(pokemon.BaseExperience)
 		if rnd < 40 {
 			fmt.Printf("%s was caught!\n", pokemonName)
-			client.PokemonCaught[pokemonName] = &pokemon
+			pokedex.CaughtPokemon[pokemonName] = pokemon
 		} else {
 			fmt.Printf("%s escaped!\n", pokemonName)
 		}
@@ -106,7 +106,7 @@ func commandCatch(client *pokeapi.PokeAPIClient) func([]string) error {
 	}
 }
 
-func getCommands(client *pokeapi.PokeAPIClient) map[string]cliCommand {
+func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cliCommand {
 	cmds := map[string]cliCommand{
 		"exit": {
 			name:        "exit",
@@ -137,7 +137,7 @@ func getCommands(client *pokeapi.PokeAPIClient) map[string]cliCommand {
 	cmds["catch"] = cliCommand{
 		name:        "catch",
 		description: "Trying to catch a pokemon — usage: catch <pokemon-name>",
-		callback:    commandCatch(client),
+		callback:    commandCatch(client, pokedex),
 	}
 	return cmds
 }

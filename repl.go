@@ -15,8 +15,8 @@ type cliCommand struct {
 	callback    func(args []string) error
 }
 
-func startRepl(client *pokeapi.PokeAPIClient) {
-	cmds := getCommands(client)
+func startRepl(client *pokeapi.PokeAPIClient, pokedex *Pokedex) {
+	cmds := getCommands(client, pokedex)
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
