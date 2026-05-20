@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -83,7 +82,7 @@ func commandExplore(client *pokeapi.PokeAPIClient) func([]string) error {
 func commandCatch(client *pokeapi.PokeAPIClient, pokedex *Pokedex) func([]string) error {
 	return func(args []string) error {
 		if len(args) < 2 {
-			return errors.New("you must provide a pokemon name")
+			return fmt.Errorf("usage: catch <pokemon-name>")
 		}
 
 		pokemonName := args[1] // words[0]=catch, words[1]=pokemon name
@@ -97,6 +96,7 @@ func commandCatch(client *pokeapi.PokeAPIClient, pokedex *Pokedex) func([]string
 		rnd := rand.Intn(pokemon.BaseExperience)
 		if rnd < 40 {
 			fmt.Printf("%s was caught!\n", pokemonName)
+			fmt.Println("You may now inspect it with the inspect command.")
 			pokedex.CaughtPokemon[pokemonName] = pokemon
 		} else {
 			fmt.Printf("%s escaped!\n", pokemonName)
@@ -109,7 +109,7 @@ func commandCatch(client *pokeapi.PokeAPIClient, pokedex *Pokedex) func([]string
 func commandInspect(pokedex *Pokedex) func([]string) error {
 	return func(args []string) error {
 		if len(args) < 2 {
-			return errors.New("you must provide a pokemon name")
+			return fmt.Errorf("usage: inspect <pokemon-name>")
 		}
 
 		pokemonName := args[1] // words[0]=inspect, words[1]=pokemon name
@@ -124,14 +124,29 @@ func commandInspect(pokedex *Pokedex) func([]string) error {
 		if len(pokemon.Stats) > 0 {
 			fmt.Println("Stats:")
 			for _, stat := range pokemon.Stats {
-				fmt.Printf(" -%s: %d\n", stat.Stat.Name, stat.BaseStat)
+				fmt.Printf("  -%s: %d\n", stat.Stat.Name, stat.BaseStat)
 			}
 		}
 		if len(pokemon.Types) > 0 {
 			fmt.Println("Types:")
 			for _, t := range pokemon.Types {
-				fmt.Printf(" -%s\n", t.Type.Name)
+				fmt.Printf("  -%s\n", t.Type.Name)
 			}
+		}
+		return nil
+	}
+}
+
+func commandListAllPokemons(pokedex *Pokedex) func([]string) error {
+	return func(args []string) error {
+		if len(pokedex.CaughtPokemon) == 0 {
+			fmt.Println("You haven't caught any Pokemon yet!")
+			return nil
+		}
+
+		fmt.Println("Your Pokedex:")
+		for name := range pokedex.CaughtPokemon {
+			fmt.Printf(" - %s\n", name)
 		}
 		return nil
 	}
@@ -166,14 +181,19 @@ func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cli
 		callback:    commandExplore(client),
 	}
 	cmds["catch"] = cliCommand{
-		name:        "catch <pokemon_name>",
-		description: "Attempt to catch a pokemon",
+		name:        "catch",
+		description: "Attempt to catch a pokemon — usage: catch <pokemon-name>",
 		callback:    commandCatch(client, pokedex),
 	}
 	cmds["inspect"] = cliCommand{
 		name:        "inspect <pokemon_name>",
 		description: "View details about a caught Pokemon",
 		callback:    commandInspect(pokedex),
+	}
+	cmds["pokedex"] = cliCommand{
+		name:        "pokedex",
+		description: "List all caught Pokemon",
+		callback:    commandListAllPokemons(pokedex),
 	}
 	return cmds
 }
