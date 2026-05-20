@@ -8,15 +8,17 @@ import (
 )
 
 type PokeAPIClient struct {
-	httpClient *http.Client
-	Next       *string // nil = first page
-	Previous   *string // nil = on first page
-	cache      *pokecache.Cache
+	httpClient    *http.Client
+	Next          *string // nil = first page
+	Previous      *string // nil = on first page
+	cache         *pokecache.Cache
+	PokemonCaught map[string]*Pokemon
 }
 
 func NewPokeAPIClient() *PokeAPIClient {
 	return &PokeAPIClient{
-		httpClient: &http.Client{},
-		cache:      pokecache.NewCache(5 * time.Minute), // 5min sensible
+		httpClient:    &http.Client{},
+		cache:         pokecache.NewCache(5 * time.Minute), // 5min sensible
+		PokemonCaught: make(map[string]*Pokemon),
 	}
 }

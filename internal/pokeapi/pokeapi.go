@@ -7,25 +7,6 @@ import (
 	"net/http"
 )
 
-type LocationAreaResponse struct {
-	Count    int     `json:"count"`
-	Next     *string `json:"next"`
-	Previous *string `json:"previous"`
-	Results  []struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
-	} `json:"results"`
-}
-
-type ExploreAreaResponse struct {
-	PokemonEncounters []struct {
-		Pokemon struct {
-			Name string `json:"name"`
-			URL  string `json:"url"`
-		} `json:"pokemon"`
-	} `json:"pokemon_encounters"`
-}
-
 func (c *PokeAPIClient) ExploreArea(areaName string) ([]string, error) {
 	url := locationAreaURL + areaName
 
@@ -91,6 +72,34 @@ func (c *PokeAPIClient) GetPreviousLocationAreas() ([]string, error) {
 	}
 	c.Next = c.Previous
 	return c.GetLocationAreas()
+}
+
+func (c *PokeAPIClient) GetPokemon(pokemonName string) (Pokemon, error) {
+	url := pokemonURL + pokemonName
+
+	// check cache first
+	if cached, ok := c.cache.Get(url); ok {
+		var pokemon Pokemon
+		if err := json.Unmarshal(cached, &pokemon); err != nil {
+			return Pokemon{}, err
+		}
+		return pokemon, nil
+	}
+
+	// cache miss — fetch from API
+	body, err := c.fetch(url)
+	if err != nil {
+		return Pokemon{}, err
+	}
+
+	// store in cache
+	c.cache.Add(url, body)
+
+	var pokemon Pokemon
+	if err := json.Unmarshal(body, &pokemon); err != nil {
+		return Pokemon{}, err
+	}
+	return pokemon, nil
 }
 
 // fetch makes a GET request and returns the raw body bytes
