@@ -106,6 +106,37 @@ func commandCatch(client *pokeapi.PokeAPIClient, pokedex *Pokedex) func([]string
 	}
 }
 
+func commandInspect(pokedex *Pokedex) func([]string) error {
+	return func(args []string) error {
+		if len(args) < 2 {
+			return errors.New("you must provide a pokemon name")
+		}
+
+		pokemonName := args[1] // words[0]=inspect, words[1]=pokemon name
+		pokemon, ok := pokedex.CaughtPokemon[pokemonName]
+		if !ok {
+			return fmt.Errorf("%s is not in your Pokedex", pokemonName)
+		}
+
+		fmt.Printf("Name: %s\n", pokemon.Name)
+		fmt.Printf("Height: %d\n", pokemon.Height)
+		fmt.Printf("Weight: %d\n", pokemon.Weight)
+		if len(pokemon.Stats) > 0 {
+			fmt.Println("Stats:")
+			for _, stat := range pokemon.Stats {
+				fmt.Printf(" -%s: %d\n", stat.Stat.Name, stat.BaseStat)
+			}
+		}
+		if len(pokemon.Types) > 0 {
+			fmt.Println("Types:")
+			for _, t := range pokemon.Types {
+				fmt.Printf(" -%s\n", t.Type.Name)
+			}
+		}
+		return nil
+	}
+}
+
 func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cliCommand {
 	cmds := map[string]cliCommand{
 		"exit": {
@@ -130,14 +161,19 @@ func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cli
 		callback:    commandMapBack(client),
 	}
 	cmds["explore"] = cliCommand{
-		name:        "explore",
+		name:        "explore <area_name>",
 		description: "Explore a location area — usage: explore <area-name>",
 		callback:    commandExplore(client),
 	}
 	cmds["catch"] = cliCommand{
-		name:        "catch",
-		description: "Trying to catch a pokemon — usage: catch <pokemon-name>",
+		name:        "catch <pokemon_name>",
+		description: "Attempt to catch a pokemon",
 		callback:    commandCatch(client, pokedex),
+	}
+	cmds["inspect"] = cliCommand{
+		name:        "inspect <pokemon_name>",
+		description: "View details about a caught Pokemon",
+		callback:    commandInspect(pokedex),
 	}
 	return cmds
 }
