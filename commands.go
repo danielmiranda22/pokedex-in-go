@@ -137,7 +137,7 @@ func commandInspect(pokedex *Pokedex) func([]string) error {
 	}
 }
 
-func commandListAllPokemons(pokedex *Pokedex) func([]string) error {
+func commandPokedex(pokedex *Pokedex) func([]string) error {
 	return func(args []string) error {
 		if len(pokedex.CaughtPokemon) == 0 {
 			fmt.Println("You haven't caught any Pokemon yet!")
@@ -193,7 +193,7 @@ func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cli
 	cmds["pokedex"] = cliCommand{
 		name:        "pokedex",
 		description: "List all caught Pokemon",
-		callback:    commandListAllPokemons(pokedex),
+		callback:    commandPokedex(pokedex),
 	}
 	return cmds
 }
