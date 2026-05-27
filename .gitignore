@@ -32,3 +32,4 @@ go.work.sum
 # .vscode/
 
 *.repl.log
+.pokedex_history.tmp

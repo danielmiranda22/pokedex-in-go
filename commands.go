@@ -16,8 +16,7 @@ func commandExit(args []string) error {
 
 func commandHelp(cmds map[string]cliCommand) func([]string) error {
 	return func(args []string) error {
-		fmt.Println("Welcome to the Pokedex!")
-		fmt.Println("Usage:")
+		fmt.Println("Usage: - Type a command and press Enter to execute it.")
 		for _, cmd := range cmds {
 			fmt.Printf("%s: %s\n", cmd.name, cmd.description)
 		}

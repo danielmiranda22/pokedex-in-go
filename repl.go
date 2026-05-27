@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strings"
+
+	"github.com/chzyer/readline"
 
 	"github.com/danielmiranda22/pokedexcli/internal/pokeapi"
 )
@@ -17,16 +17,27 @@ type cliCommand struct {
 
 func startRepl(client *pokeapi.PokeAPIClient, pokedex *Pokedex) {
 	cmds := getCommands(client, pokedex)
-	scanner := bufio.NewScanner(os.Stdin)
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:          "Pokedex > ",
+		HistoryFile:     "/tmp/pokedex_history.tmp",
+		InterruptPrompt: "^C",
+		EOFPrompt:       "exit",
+	})
+	if err != nil {
+		fmt.Println("Error initializing readline:", err)
+		return
+	}
+	defer rl.Close()
+
+	fmt.Println("🤾🏻‍♀️ Welcome to the Pokedex! Type 'help' to see available commands.")
 
 	for {
-		fmt.Print("Pokedex > ")
-
-		if !scanner.Scan() {
+		line, err := rl.Readline()
+		if err != nil {
 			break
 		}
 
-		words := cleanInput(scanner.Text())
+		words := cleanInput(line)
 		if len(words) == 0 {
 			continue
 		}
