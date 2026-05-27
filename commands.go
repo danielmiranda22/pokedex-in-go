@@ -16,10 +16,15 @@ func commandExit(args []string) error {
 
 func commandHelp(cmds map[string]cliCommand) func([]string) error {
 	return func(args []string) error {
-		fmt.Println("Usage: - Type a command and press Enter to execute it.")
+		fmt.Println("\n🤾 Pokédex CLI Help\n")
+
 		for _, cmd := range cmds {
-			fmt.Printf("%s: %s\n", cmd.name, cmd.description)
+			// Customize the formatting of the command name and description
+			// Ansi color codes for cyan and reset
+			// pad left to 15 characters for alignment
+			fmt.Printf("\033[36m  %-15s\033[0m %s\n", cmd.name, cmd.description)
 		}
+
 		fmt.Println()
 		return nil
 	}
@@ -175,18 +180,18 @@ func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cli
 		callback:    commandMapBack(client),
 	}
 	cmds["explore"] = cliCommand{
-		name:        "explore <area_name>",
-		description: "Explore a location area — usage: explore <area-name>",
+		name:        "explore",
+		description: "usage: explore <area-name>",
 		callback:    commandExplore(client),
 	}
 	cmds["catch"] = cliCommand{
 		name:        "catch",
-		description: "Attempt to catch a pokemon — usage: catch <pokemon-name>",
+		description: "usage: catch <pokemon-name>",
 		callback:    commandCatch(client, pokedex),
 	}
 	cmds["inspect"] = cliCommand{
-		name:        "inspect <pokemon_name>",
-		description: "View details about a caught Pokemon",
+		name:        "inspect",
+		description: "usage: inspect <pokemon-name>",
 		callback:    commandInspect(pokedex),
 	}
 	cmds["pokedex"] = cliCommand{
