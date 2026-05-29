@@ -2,7 +2,7 @@
 
 Command-line Pokédex in Go. Uses [PokéAPI](https://pokeapi.co) to explore locations, catch Pokémon and manage your collection.
 
-> Initially built as part of [Boot.dev's](https://boot.dev). Now being actively extended with new features, improvements, and explorations into Go CLI development.
+> Originally built as part of [Boot.dev's Go path](https://boot.dev), now being extended as a personal CLI project.
 
 ---
 
