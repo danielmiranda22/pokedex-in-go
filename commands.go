@@ -160,7 +160,7 @@ func commandPokedex(pokedex *Pokedex) func([]string) error {
 			return nil
 		}
 
-		fmt.Println("\nYour Pokedex: ")
+		fmt.Printf("\n%sYour Pokedex:%s\n", colorBlue, colorReset)
 		for name := range pokedex.CaughtPokemon {
 			fmt.Printf(" - %s%s%s\n", colorGreen, name, colorReset)
 		}
@@ -176,18 +176,34 @@ func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cli
 			callback:    commandExit,
 		},
 	}
+
+	// Create the map command and add it under both "map" and "m"
+	mapCmd := cliCommand{
+		name:        "map | m",
+		description: "Displays next 20 location areas",
+		callback:    commandMap(client),
+	}
+
+	cmds["map"] = mapCmd
+	cmds["m"] = mapCmd
+
+	// Create the catch command and add it under both "catch" and "c"
+	catchCmd := cliCommand{
+		name:        "catch | c",
+		description: "usage: catch <pokemon-name>",
+		callback:    commandCatch(client, pokedex),
+	}
+
+	cmds["catch"] = catchCmd
+	cmds["c"] = catchCmd
+
 	cmds["help"] = cliCommand{
 		name:        "help",
 		description: "Displays a help message",
 		callback:    commandHelp(cmds),
 	}
-	cmds["map"] = cliCommand{
-		name:        "map",
-		description: "Displays next 20 location areas",
-		callback:    commandMap(client),
-	}
 	cmds["mapb"] = cliCommand{
-		name:        "mapb",
+		name:        "mapb | mb",
 		description: "Displays previous 20 location areas",
 		callback:    commandMapBack(client),
 	}
@@ -195,11 +211,6 @@ func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cli
 		name:        "explore",
 		description: "usage: explore <area-name>",
 		callback:    commandExplore(client),
-	}
-	cmds["catch"] = cliCommand{
-		name:        "catch",
-		description: "usage: catch <pokemon-name>",
-		callback:    commandCatch(client, pokedex),
 	}
 	cmds["inspect"] = cliCommand{
 		name:        "inspect",
