@@ -30,7 +30,15 @@ func commandHelp(cmds map[string]cliCommand) func([]string) error {
 	return func(args []string) error {
 		fmt.Printf("\n%s🤾 Pokédex CLI Help%s\n\n", colorBlue, colorReset)
 
+		seen := make(map[string]bool)
+
 		for _, cmd := range cmds {
+			if seen[cmd.name] {
+				continue
+			}
+
+			seen[cmd.name] = true
+
 			// Customize the formatting of the command name and description
 			// Ansi color codes for cyan and reset
 			// pad left to 15 characters for alignment
