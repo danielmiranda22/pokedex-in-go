@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sort"
 
 	"github.com/danielmiranda22/pokedexcli/internal/pokeapi"
 )
@@ -31,6 +32,7 @@ func commandHelp(cmds map[string]cliCommand) func([]string) error {
 		fmt.Printf("\n%s🤾 Pokédex CLI Help%s\n\n", colorBlue, colorReset)
 
 		seen := make(map[string]bool)
+		orderedCmds := make([]cliCommand, 0, len(cmds))
 
 		for _, cmd := range cmds {
 			if seen[cmd.name] {
@@ -38,7 +40,15 @@ func commandHelp(cmds map[string]cliCommand) func([]string) error {
 			}
 
 			seen[cmd.name] = true
+			orderedCmds = append(orderedCmds, cmd)
 
+		}
+
+		sort.Slice(orderedCmds, func(i, j int) bool {
+			return orderedCmds[i].order < orderedCmds[j].order
+		})
+
+		for _, cmd := range orderedCmds {
 			// Customize the formatting of the command name and description
 			// Ansi color codes for cyan and reset
 			// pad left to 15 characters for alignment
@@ -182,53 +192,60 @@ func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cli
 			name:        "exit",
 			description: "Exit the Pokedex",
 			callback:    commandExit,
+			order:       8,
 		},
-	}
-
-	// Create the map command and add it under both "map" and "m"
-	mapCmd := cliCommand{
-		name:        "map | m",
-		description: "Displays next 20 location areas",
-		callback:    commandMap(client),
-	}
-
-	cmds["map"] = mapCmd
-	cmds["m"] = mapCmd
-
-	// Create the catch command and add it under both "catch" and "c"
-	catchCmd := cliCommand{
-		name:        "catch | c",
-		description: "usage: catch <pokemon-name>",
-		callback:    commandCatch(client, pokedex),
-	}
-
-	cmds["catch"] = catchCmd
-	cmds["c"] = catchCmd
-
-	cmds["help"] = cliCommand{
-		name:        "help",
-		description: "Displays a help message",
-		callback:    commandHelp(cmds),
-	}
-	cmds["mapb"] = cliCommand{
-		name:        "mapb | mb",
-		description: "Displays previous 20 location areas",
-		callback:    commandMapBack(client),
-	}
-	cmds["explore"] = cliCommand{
-		name:        "explore",
-		description: "usage: explore <area-name>",
-		callback:    commandExplore(client),
-	}
-	cmds["inspect"] = cliCommand{
-		name:        "inspect",
-		description: "usage: inspect <pokemon-name>",
-		callback:    commandInspect(pokedex),
 	}
 	cmds["pokedex"] = cliCommand{
 		name:        "pokedex",
 		description: "List all caught Pokemon",
 		callback:    commandPokedex(pokedex),
+		order:       7,
 	}
+	cmds["inspect"] = cliCommand{
+		name:        "inspect",
+		description: "usage: inspect <pokemon-name>",
+		callback:    commandInspect(pokedex),
+		order:       6,
+	}
+	// Create the catch command and add it under both "catch" and "c"
+	catchCmd := cliCommand{
+		name:        "catch | c",
+		description: "usage: catch <pokemon-name>",
+		callback:    commandCatch(client, pokedex),
+		order:       5,
+	}
+	cmds["catch"] = catchCmd
+	cmds["c"] = catchCmd
+
+	cmds["explore"] = cliCommand{
+		name:        "explore",
+		description: "usage: explore <area-name>",
+		callback:    commandExplore(client),
+		order:       4,
+	}
+	cmds["mapb"] = cliCommand{
+		name:        "mapb",
+		description: "Displays previous 20 location areas",
+		callback:    commandMapBack(client),
+		order:       3,
+	}
+	// Create the map command and add it under both "map" and "m"
+	mapCmd := cliCommand{
+		name:        "map | m",
+		description: "Displays next 20 location areas",
+		callback:    commandMap(client),
+		order:       2,
+	}
+
+	cmds["map"] = mapCmd
+	cmds["m"] = mapCmd
+
+	cmds["help"] = cliCommand{
+		name:        "help",
+		description: "Displays a help message",
+		callback:    commandHelp(cmds),
+		order:       1,
+	}
+
 	return cmds
 }

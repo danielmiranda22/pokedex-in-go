@@ -13,6 +13,7 @@ type cliCommand struct {
 	name        string
 	description string
 	callback    func(args []string) error
+	order       int
 }
 
 func startRepl(client *pokeapi.PokeAPIClient, pokedex *Pokedex) {
