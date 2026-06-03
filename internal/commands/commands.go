@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"fmt"
@@ -6,8 +6,16 @@ import (
 	"os"
 	"sort"
 
+	"github.com/danielmiranda22/pokedexcli/internal/domain"
 	"github.com/danielmiranda22/pokedexcli/internal/pokeapi"
 )
+
+type Command struct {
+	Name        string
+	Description string
+	Callback    func(args []string) error
+	Order       int
+}
 
 var (
 	colorReset   = "\033[0m"
@@ -27,32 +35,28 @@ func commandExit(args []string) error {
 	return nil
 }
 
-func commandHelp(cmds map[string]cliCommand) func([]string) error {
+func commandHelp(cmds map[string]Command) func([]string) error {
 	return func(args []string) error {
 		fmt.Printf("\n%s🤾 Pokédex CLI Help%s\n\n", colorBlue, colorReset)
 
 		seen := make(map[string]bool)
-		orderedCmds := make([]cliCommand, 0, len(cmds))
+		orderedCmds := make([]Command, 0, len(cmds))
 
 		for _, cmd := range cmds {
-			if seen[cmd.name] {
+			if seen[cmd.Name] {
 				continue
 			}
 
-			seen[cmd.name] = true
+			seen[cmd.Name] = true
 			orderedCmds = append(orderedCmds, cmd)
-
 		}
 
 		sort.Slice(orderedCmds, func(i, j int) bool {
-			return orderedCmds[i].order < orderedCmds[j].order
+			return orderedCmds[i].Order < orderedCmds[j].Order
 		})
 
 		for _, cmd := range orderedCmds {
-			// Customize the formatting of the command name and description
-			// Ansi color codes for cyan and reset
-			// pad left to 15 characters for alignment
-			fmt.Printf("%s  %-15s%s %s\n", colorCyan, cmd.name, colorReset, cmd.description)
+			fmt.Printf("%s  %-15s%s %s\n", colorCyan, cmd.Name, colorReset, cmd.Description)
 		}
 
 		fmt.Println()
@@ -92,12 +96,11 @@ func commandMapBack(client *pokeapi.PokeAPIClient) func([]string) error {
 
 func commandExplore(client *pokeapi.PokeAPIClient) func([]string) error {
 	return func(args []string) error {
-		// validate — explore needs exactly one argument
 		if len(args) < 2 {
 			return fmt.Errorf("%susage: explore <area-name>%s", colorGray, colorReset)
 		}
 
-		areaName := args[1] // words[0]=explore, words[1]=area name
+		areaName := args[1]
 		fmt.Printf("Exploring %s%s%s...\n", colorCyan, areaName, colorReset)
 
 		pokemons, err := client.ExploreArea(areaName)
@@ -113,13 +116,13 @@ func commandExplore(client *pokeapi.PokeAPIClient) func([]string) error {
 	}
 }
 
-func commandCatch(client *pokeapi.PokeAPIClient, pokedex *Pokedex) func([]string) error {
+func commandCatch(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) func([]string) error {
 	return func(args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("%susage: catch <pokemon-name>%s", colorGray, colorReset)
 		}
 
-		pokemonName := args[1] // words[0]=catch, words[1]=pokemon name
+		pokemonName := args[1]
 		fmt.Printf("Throwing a Pokeball at %s%s%s...\n", colorCyan, pokemonName, colorReset)
 
 		pokemon, err := client.GetPokemon(pokemonName)
@@ -140,13 +143,13 @@ func commandCatch(client *pokeapi.PokeAPIClient, pokedex *Pokedex) func([]string
 	}
 }
 
-func commandInspect(pokedex *Pokedex) func([]string) error {
+func commandInspect(pokedex *domain.Pokedex) func([]string) error {
 	return func(args []string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("%susage: inspect <pokemon-name>%s", colorGray, colorReset)
 		}
 
-		pokemonName := args[1] // words[0]=inspect, words[1]=pokemon name
+		pokemonName := args[1]
 		pokemon, ok := pokedex.CaughtPokemon[pokemonName]
 		if !ok {
 			return fmt.Errorf("%s%s%s is not in your Pokedex", colorRed, pokemonName, colorReset)
@@ -171,7 +174,7 @@ func commandInspect(pokedex *Pokedex) func([]string) error {
 	}
 }
 
-func commandPokedex(pokedex *Pokedex) func([]string) error {
+func commandPokedex(pokedex *domain.Pokedex) func([]string) error {
 	return func(args []string) error {
 		if len(pokedex.CaughtPokemon) == 0 {
 			fmt.Printf("%sYou haven't caught any Pokemon yet!%s\n", colorRed, colorReset)
@@ -186,65 +189,67 @@ func commandPokedex(pokedex *Pokedex) func([]string) error {
 	}
 }
 
-func getCommands(client *pokeapi.PokeAPIClient, pokedex *Pokedex) map[string]cliCommand {
-	cmds := map[string]cliCommand{
+func GetCommands(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) map[string]Command {
+	cmds := map[string]Command{
 		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    commandExit,
-			order:       8,
+			Name:        "exit",
+			Description: "Exit the Pokedex",
+			Callback:    commandExit,
+			Order:       8,
 		},
 	}
-	cmds["pokedex"] = cliCommand{
-		name:        "pokedex",
-		description: "List all caught Pokemon",
-		callback:    commandPokedex(pokedex),
-		order:       7,
+
+	cmds["pokedex"] = Command{
+		Name:        "pokedex",
+		Description: "List all caught Pokemon",
+		Callback:    commandPokedex(pokedex),
+		Order:       7,
 	}
-	cmds["inspect"] = cliCommand{
-		name:        "inspect",
-		description: "usage: inspect <pokemon-name>",
-		callback:    commandInspect(pokedex),
-		order:       6,
+
+	cmds["inspect"] = Command{
+		Name:        "inspect",
+		Description: "usage: inspect <pokemon-name>",
+		Callback:    commandInspect(pokedex),
+		Order:       6,
 	}
-	// Create the catch command and add it under both "catch" and "c"
-	catchCmd := cliCommand{
-		name:        "catch | c",
-		description: "usage: catch <pokemon-name>",
-		callback:    commandCatch(client, pokedex),
-		order:       5,
+
+	catchCmd := Command{
+		Name:        "catch | c",
+		Description: "usage: catch <pokemon-name>",
+		Callback:    commandCatch(client, pokedex),
+		Order:       5,
 	}
 	cmds["catch"] = catchCmd
 	cmds["c"] = catchCmd
 
-	cmds["explore"] = cliCommand{
-		name:        "explore",
-		description: "usage: explore <area-name>",
-		callback:    commandExplore(client),
-		order:       4,
-	}
-	cmds["mapb"] = cliCommand{
-		name:        "mapb",
-		description: "Displays previous 20 location areas",
-		callback:    commandMapBack(client),
-		order:       3,
-	}
-	// Create the map command and add it under both "map" and "m"
-	mapCmd := cliCommand{
-		name:        "map | m",
-		description: "Displays next 20 location areas",
-		callback:    commandMap(client),
-		order:       2,
+	cmds["explore"] = Command{
+		Name:        "explore",
+		Description: "usage: explore <area-name>",
+		Callback:    commandExplore(client),
+		Order:       4,
 	}
 
+	cmds["mapb"] = Command{
+		Name:        "mapb",
+		Description: "Displays previous 20 location areas",
+		Callback:    commandMapBack(client),
+		Order:       3,
+	}
+
+	mapCmd := Command{
+		Name:        "map | m",
+		Description: "Displays next 20 location areas",
+		Callback:    commandMap(client),
+		Order:       2,
+	}
 	cmds["map"] = mapCmd
 	cmds["m"] = mapCmd
 
-	cmds["help"] = cliCommand{
-		name:        "help",
-		description: "Displays a help message",
-		callback:    commandHelp(cmds),
-		order:       1,
+	cmds["help"] = Command{
+		Name:        "help",
+		Description: "Displays a help message",
+		Callback:    commandHelp(cmds),
+		Order:       1,
 	}
 
 	return cmds

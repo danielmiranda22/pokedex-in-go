@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -6,18 +6,10 @@ import (
 
 	"github.com/chzyer/readline"
 
-	"github.com/danielmiranda22/pokedexcli/internal/pokeapi"
+	"github.com/danielmiranda22/pokedexcli/internal/commands"
 )
 
-type cliCommand struct {
-	name        string
-	description string
-	callback    func(args []string) error
-	order       int
-}
-
-func startRepl(client *pokeapi.PokeAPIClient, pokedex *Pokedex) {
-	cmds := getCommands(client, pokedex)
+func StartRepl(cmds map[string]commands.Command) {
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          "Pokedex > ",
 		HistoryFile:     "/tmp/pokedex_history.tmp",
@@ -49,7 +41,7 @@ func startRepl(client *pokeapi.PokeAPIClient, pokedex *Pokedex) {
 			continue
 		}
 
-		if err := cmd.callback(words); err != nil {
+		if err := cmd.Callback(words); err != nil {
 			fmt.Println("Error:", err)
 		}
 	}

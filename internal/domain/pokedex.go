@@ -1,8 +1,7 @@
-package main
+package domain
 
 import "github.com/danielmiranda22/pokedexcli/internal/pokeapi"
 
-// Pokedex holds the user's game state — caught pokemon
 type Pokedex struct {
 	CaughtPokemon map[string]pokeapi.Pokemon
 }
