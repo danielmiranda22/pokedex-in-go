@@ -37,29 +37,14 @@ func commandExit(args []string) error {
 
 func commandHelp(cmds map[string]Command) func([]string) error {
 	return func(args []string) error {
+		orderedCmds := sortCommandByOrder(cmds)
+
 		fmt.Printf("\n%s🤾 Pokédex CLI Help%s\n\n", colorBlue, colorReset)
-
-		seen := make(map[string]bool)
-		orderedCmds := make([]Command, 0, len(cmds))
-
-		for _, cmd := range cmds {
-			if seen[cmd.Name] {
-				continue
-			}
-
-			seen[cmd.Name] = true
-			orderedCmds = append(orderedCmds, cmd)
-		}
-
-		sort.Slice(orderedCmds, func(i, j int) bool {
-			return orderedCmds[i].Order < orderedCmds[j].Order
-		})
-
 		for _, cmd := range orderedCmds {
 			fmt.Printf("%s  %-15s%s %s\n", colorCyan, cmd.Name, colorReset, cmd.Description)
 		}
-
 		fmt.Println()
+
 		return nil
 	}
 }
@@ -253,4 +238,25 @@ func GetCommands(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) map[str
 	}
 
 	return cmds
+}
+
+// Private
+func sortCommandByOrder(cmds map[string]Command) []Command {
+	seen := make(map[string]bool)
+	orderedCmds := make([]Command, 0, len(cmds))
+
+	for _, cmd := range cmds {
+		if seen[cmd.Name] {
+			continue
+		}
+		seen[cmd.Name] = true
+		orderedCmds = append(orderedCmds, cmd)
+	}
+
+	sort.Slice(orderedCmds, func(i, j int) bool {
+		return orderedCmds[i].Order < orderedCmds[j].Order
+	})
+
+	return orderedCmds
+
 }
