@@ -81,8 +81,8 @@ func commandMapBack(client *pokeapi.PokeAPIClient) func([]string) error {
 
 func commandExplore(client *pokeapi.PokeAPIClient) func([]string) error {
 	return func(args []string) error {
-		if len(args) < 2 {
-			return fmt.Errorf("%susage: explore <area-name>%s", colorGray, colorReset)
+		if err := validateArgs(args, 2, "usage: explore <area-name>"); err != nil {
+			return fmt.Errorf("%s%v%s", colorGray, err, colorReset)
 		}
 
 		areaName := args[1]
@@ -90,7 +90,7 @@ func commandExplore(client *pokeapi.PokeAPIClient) func([]string) error {
 
 		pokemons, err := client.ExploreArea(areaName)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s%v%s", colorGray, err, colorReset)
 		}
 
 		fmt.Printf("%sFound Pokemon:%s\n", colorYellow, colorReset)
@@ -103,8 +103,8 @@ func commandExplore(client *pokeapi.PokeAPIClient) func([]string) error {
 
 func commandCatch(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) func([]string) error {
 	return func(args []string) error {
-		if len(args) < 2 {
-			return fmt.Errorf("%susage: catch <pokemon-name>%s", colorGray, colorReset)
+		if err := validateArgs(args, 2, "usage: catch <pokemon-name>"); err != nil {
+			return fmt.Errorf("%s%v%s", colorGray, err, colorReset)
 		}
 
 		pokemonName := args[1]
@@ -112,7 +112,7 @@ func commandCatch(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) func([
 
 		pokemon, err := client.GetPokemon(pokemonName)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s%v%s", colorGray, err, colorReset)
 		}
 
 		if getCatchResult(pokemon.BaseExperience) {
@@ -129,8 +129,8 @@ func commandCatch(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) func([
 
 func commandInspect(pokedex *domain.Pokedex) func([]string) error {
 	return func(args []string) error {
-		if len(args) < 2 {
-			return fmt.Errorf("%susage: inspect <pokemon-name>%s", colorGray, colorReset)
+		if err := validateArgs(args, 2, "usage: inspect <pokemon-name>"); err != nil {
+			return fmt.Errorf("%s%v%s", colorGray, err, colorReset)
 		}
 
 		pokemonName := args[1]
@@ -240,6 +240,14 @@ func GetCommands(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) map[str
 }
 
 // Private
+
+func validateArgs(args []string, expected int, expectedMsg string) error {
+	if len(args) < expected {
+		return fmt.Errorf("%s", expectedMsg)
+	}
+	return nil
+}
+
 func getCatchResult(xp int) bool {
 	randomVal := rand.Intn(xp)
 	return shouldCatchPokemon(randomVal)

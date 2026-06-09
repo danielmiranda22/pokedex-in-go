@@ -63,3 +63,31 @@ func TestShouldCatchPokemon(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateArgs(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		minRequired int
+		usageMsg    string
+		shouldError bool
+	}{
+		{"no args", []string{}, 2, "usage: test", true},
+		{"exactly minimum", []string{"cmd", "arg"}, 2, "usage: test", false},
+		{"one short", []string{"cmd"}, 2, "usage: test", true},
+		{"more than minimum", []string{"cmd", "arg", "extra"}, 2, "usage: test", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateArgs(tt.args, tt.minRequired, tt.usageMsg)
+			if tt.shouldError && err == nil {
+				t.Errorf("Expected an error but got nil")
+			} else if !tt.shouldError && err != nil {
+				t.Errorf("Expected no error but got: %v", err)
+			} else if tt.shouldError && err.Error() != tt.usageMsg {
+				t.Errorf("Expected error message '%s' but got '%s'", tt.usageMsg, err.Error())
+			}
+		})
+	}
+}
