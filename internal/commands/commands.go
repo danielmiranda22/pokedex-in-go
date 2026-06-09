@@ -115,8 +115,7 @@ func commandCatch(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) func([
 			return err
 		}
 
-		rnd := rand.Intn(pokemon.BaseExperience)
-		if rnd < 40 {
+		if getCatchResult(pokemon.BaseExperience) {
 			fmt.Printf("%s%s was caught!%s\n", colorGreen, pokemonName, colorReset)
 			fmt.Printf("%sYou may now inspect it with the inspect command.%s\n", colorGray, colorReset)
 			pokedex.CaughtPokemon[pokemonName] = pokemon
@@ -241,6 +240,15 @@ func GetCommands(client *pokeapi.PokeAPIClient, pokedex *domain.Pokedex) map[str
 }
 
 // Private
+func getCatchResult(xp int) bool {
+	randomVal := rand.Intn(xp)
+	return shouldCatchPokemon(randomVal)
+}
+
+func shouldCatchPokemon(rnd int) bool {
+	return rnd > 40
+}
+
 func sortCommandByOrder(cmds map[string]Command) []Command {
 	seen := make(map[string]bool)
 	orderedCmds := make([]Command, 0, len(cmds))

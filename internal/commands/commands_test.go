@@ -41,3 +41,25 @@ func TestSortCommandsByOrder(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldCatchPokemon(t *testing.T) {
+	tests := []struct {
+		name      string
+		randomVal int
+		expected  bool
+	}{
+		{"catches when random > 40", 50, true},
+		{"escapes when random < 40", 30, false},
+		{"escapes when random = 40", 40, false},
+		{"catches at boundary", 41, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := shouldCatchPokemon(tt.randomVal)
+			if result != tt.expected {
+				t.Errorf("Expected %v but got %v", tt.expected, result)
+			}
+		})
+	}
+}
